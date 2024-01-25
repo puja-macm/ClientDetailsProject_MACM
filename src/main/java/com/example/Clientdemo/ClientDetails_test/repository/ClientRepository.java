@@ -19,15 +19,14 @@ import java.util.Map;
 
 @Repository
 public class ClientRepository {
-	
-	final Logger LOGGER=LoggerFactory.getLogger(ClientRepository.class);
-	
+
+	final Logger LOGGER = LoggerFactory.getLogger(ClientRepository.class);
+
 	@Autowired
 	private RedisTemplate<String, String> redisTemplate;
 
 	@Autowired
 	private Environment env;
-	
 
 	public Map<String, String> getDataFromRedis(String id) {
 		String redisKey = "macm.user.client." + id;
@@ -39,8 +38,12 @@ public class ClientRepository {
 	public Map<String, String> getDataFromMySQL(String id) throws SQLException {
 
 		ResultSet rs = null;
-		Map<String, String> mp = new HashMap<>();
+		ResultSet rs1 = null;
+		String branchCode;
+		String subBroker;
+		Map<String, String> clientMap = new HashMap<>();
 		String url = env.getProperty("spring.datasource.url");
+		String url_b2b = env.getProperty("spring.datasource.url_for_b2b");
 		String username = env.getProperty("spring.datasource.username");
 		String password = env.getProperty("spring.datasource.password");
 		try (Connection conn = DriverManager.getConnection(url, username, password)) {
@@ -49,22 +52,50 @@ public class ClientRepository {
 				PreparedStatement ps = conn.prepareStatement("Select * from Client_Details where cl_code=?");
 				ps.setString(1, id);
 				rs = ps.executeQuery();
-				while (rs.next()) {
-				
-					mp.put("cl_code", rs.getString("cl_code"));
-					mp.put("name", rs.getString("long_name"));
-					mp.put("email", rs.getString("email"));
-					mp.put("mobile", rs.getString("mobile_pager"));
 
+				while (rs.next()) {
+
+					branchCode = rs.getString("branch_cd");
+					subBroker = rs.getString("SUB_BROKER");
+					clientMap.put("cl_code", rs.getString("cl_code"));
+					clientMap.put("name", rs.getString("long_name"));
+					clientMap.put("email", rs.getString("email"));
+					clientMap.put("mobile", rs.getString("mobile_pager"));
+					clientMap.put("pan_gir_no", rs.getString("pan_gir_no"));
+
+					if (branchCode.equals("MACMAP")) {
+						try (Connection conn1 = DriverManager.getConnection(url_b2b, username, password)) {
+
+							if (conn1 != null) {
+								System.out.println("Connected to the database!");
+								PreparedStatement ps1 = conn1
+										.prepareStatement("select * from Vw_AP_MASTER where SUB_BROKER=?");
+								ps1.setString(1, subBroker);
+								rs1 = ps1.executeQuery();
+								while (rs1.next()) {
+
+									clientMap.put("IP_PARTNER_CODE", rs1.getString("IP_PARTNER_CODE"));
+									clientMap.put("IP_EMAIL", rs1.getString("IP_EMAIL"));
+									clientMap.put("IP_MOBILE_NUMBER", rs1.getString("IP_MOBILE_NUMBER"));
+									clientMap.put("IP_NAME", rs1.getString("IP_NAME"));
+
+								}
+
+							}
+						} catch (SQLException e) {
+							System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+						}
+
+					}
 				}
 
 			} else {
-				System.out.println("Failed to make connection!");			
+				System.out.println("Failed to make connection!");
 			}
 		} catch (SQLException e) {
 			System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
 		}
-		return mp;
+		return clientMap;
 
 	}
 

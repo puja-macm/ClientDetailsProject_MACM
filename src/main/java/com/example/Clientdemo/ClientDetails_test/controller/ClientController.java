@@ -28,14 +28,14 @@ public class ClientController {
 			Map<String, String> clientData = clientService.getData(id);
 			// return new ResponseEntity<>(clientData, HttpStatus.OK);
 			if (clientData.isEmpty()) {
-				return ResponseHandler.generateResponse("","No Content Found", HttpStatus.BAD_REQUEST);
+				return ResponseHandler.generateResponse("", "No Content Found", HttpStatus.BAD_REQUEST);
 			}
 
-			return ResponseHandler.generateResponse(clientData,"Successfully retrieved data!", HttpStatus.OK);
+			return ResponseHandler.generateResponse(clientData, "Successfully retrieved data!", HttpStatus.OK);
 
 		} catch (Exception ex) {
 			// return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-			return ResponseHandler.generateResponse("","INTERNAL_SERVER_ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
+			return ResponseHandler.generateResponse("", "INTERNAL_SERVER_ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
 
 		}
 
