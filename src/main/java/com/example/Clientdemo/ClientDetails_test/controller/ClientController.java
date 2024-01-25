@@ -1,18 +1,15 @@
 package com.example.Clientdemo.ClientDetails_test.controller;
 
-import java.sql.SQLException;
-import java.util.Map;
-
+import com.example.Clientdemo.ClientDetails_test.ResponseHandler;
+import com.example.Clientdemo.ClientDetails_test.service.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.Clientdemo.ClientDetails_test.ResponseHandler;
-import com.example.Clientdemo.ClientDetails_test.service.ClientService;
+import java.util.Map;
 
 @RestController
 public class ClientController {
@@ -22,7 +19,7 @@ public class ClientController {
 
 	@GetMapping("macm/user/client/{id}")
 	// @ResponseStatus(code = HttpStatus.OK, reason = "OK")
-	public ResponseEntity<Object> getData(@PathVariable String id) throws SQLException {
+	public ResponseEntity<Object> getData(@PathVariable String id) {
 		try {
 
 			Map<String, String> clientData = clientService.getData(id);

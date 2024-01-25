@@ -6,16 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.example.Clientdemo.ClientDetails_test.service.ClientService;
-
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Repository
 public class ClientRepository {
@@ -32,18 +28,17 @@ public class ClientRepository {
 	public Map<String, String> getDataFromRedis(String id) {
 		String redisKey = "macm.user.client." + id;
 		HashOperations hashOperations = redisTemplate.opsForHash();
-		Map<String, String> value = hashOperations.entries(redisKey);
-		return value;
+		return hashOperations.entries(redisKey);
 	}
 
-	public Map<String, String> getDataFromMySQL(String id) throws SQLException {
+	public Map<String, String> getDataFromMySQL(String id)  {
 
-		ResultSet rs = null;
+		ResultSet rs;
 		Map<String, String> mp = new HashMap<>();
 		String url = env.getProperty("spring.datasource.url");
 		String username = env.getProperty("spring.datasource.username");
 		String password = env.getProperty("spring.datasource.password");
-		try (Connection conn = DriverManager.getConnection(url, username, password)) {
+		try (Connection conn = DriverManager.getConnection(Objects.requireNonNull(url), username, password)) {
 			if (conn != null) {
 				LOGGER.info("Connected to the database!");
 				PreparedStatement ps = conn.prepareStatement("Select * from Client_Details where cl_code=?");
