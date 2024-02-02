@@ -7,12 +7,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 public class ResponseHandler {
-	public static ResponseEntity<Object> generateResponse(Object responseObj, String message, HttpStatus status) {
+	public static Map<String, Object> generateResponse(Object responseObj, String message, Integer status) {
 		Map<String, Object> map = new HashMap<String, Object>();
 		map.put("data", responseObj);
 		map.put("message", message);
-		map.put("status", status.value());
+		map.put("status", status);
 
-		return new ResponseEntity<Object>(map, status);
+		return map;
 	}
 }

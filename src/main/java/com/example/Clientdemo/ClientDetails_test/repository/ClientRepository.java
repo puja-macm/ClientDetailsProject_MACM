@@ -6,13 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-
-import com.example.Clientdemo.ClientDetails_test.service.ClientService;
-
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
+import com.example.Clientdemo.ClientDetails_test.AppConstant;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,66 +27,46 @@ public class ClientRepository {
 		String redisKey = "macm.user.client." + id;
 		HashOperations hashOperations = redisTemplate.opsForHash();
 		Map<String, String> value = hashOperations.entries(redisKey);
-		return value;
+		Map<String, String> finalValue = new HashMap<>();
+		for (Map.Entry<String, String> entry : value.entrySet()) {
+			finalValue.put(AppConstant.CL_CODE, value.get("cl_code"));
+			finalValue.put(AppConstant.NAME, value.get("name"));
+			finalValue.put(AppConstant.EMAIL, value.get("email"));
+			finalValue.put(AppConstant.MOBILE_NO, value.get("mobile"));
+			finalValue.put(AppConstant.PAN_NO, value.get("pan_gir_no"));
+			finalValue.put(AppConstant.IP_PARTNER_CODE, value.get("sub_broker"));
+			
+
+		}
+		System.out.println("values are:::" + value);
+		return finalValue;
 	}
 
 	public Map<String, String> getDataFromMySQL(String id) throws SQLException {
 
 		ResultSet rs = null;
-		ResultSet rs1 = null;
-		String branchCode;
-		String subBroker;
 		Map<String, String> clientMap = new HashMap<>();
-		String url = env.getProperty("spring.datasource.url");
-		String url_b2b = env.getProperty("spring.datasource.url_for_b2b");
-		String username = env.getProperty("spring.datasource.username");
-		String password = env.getProperty("spring.datasource.password");
-		try (Connection conn = DriverManager.getConnection(url, username, password)) {
+		try (Connection conn = DriverManager.getConnection(env.getProperty("spring.datasource.url"),
+				env.getProperty("spring.datasource.username"), env.getProperty("spring.datasource.password"))) {
 			if (conn != null) {
 				LOGGER.info("Connected to the database!");
-				PreparedStatement ps = conn.prepareStatement("Select * from Client_Details where cl_code=?");
+				PreparedStatement ps = conn.prepareCall("{call usp_GetClientDetailByClientCodeAPI(?)}");
 				ps.setString(1, id);
 				rs = ps.executeQuery();
-
 				while (rs.next()) {
 
-					branchCode = rs.getString("branch_cd");
-					subBroker = rs.getString("SUB_BROKER");
 					clientMap.put("cl_code", rs.getString("cl_code"));
 					clientMap.put("name", rs.getString("long_name"));
 					clientMap.put("email", rs.getString("email"));
 					clientMap.put("mobile", rs.getString("mobile_pager"));
 					clientMap.put("pan_gir_no", rs.getString("pan_gir_no"));
+					clientMap.put("sub_broker", rs.getString("sub_broker"));
+				
 
-					if (branchCode.equals("MACMAP")) {
-						try (Connection conn1 = DriverManager.getConnection(url_b2b, username, password)) {
-
-							if (conn1 != null) {
-								System.out.println("Connected to the database!");
-								PreparedStatement ps1 = conn1
-										.prepareStatement("select * from Vw_AP_MASTER where SUB_BROKER=?");
-								ps1.setString(1, subBroker);
-								rs1 = ps1.executeQuery();
-								while (rs1.next()) {
-
-									clientMap.put("IP_PARTNER_CODE", rs1.getString("IP_PARTNER_CODE"));
-									clientMap.put("IP_EMAIL", rs1.getString("IP_EMAIL"));
-									clientMap.put("IP_MOBILE_NUMBER", rs1.getString("IP_MOBILE_NUMBER"));
-									clientMap.put("IP_NAME", rs1.getString("IP_NAME"));
-
-								}
-
-							}
-						} catch (SQLException e) {
-							System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
-						}
-
-					}
 				}
 
-			} else {
-				System.out.println("Failed to make connection!");
 			}
+
 		} catch (SQLException e) {
 			System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
 		}
@@ -104,6 +79,57 @@ public class ClientRepository {
 		HashOperations<String, String, String> hashOperations = redisTemplate.opsForHash();
 		String redisKey = "macm.user.client." + id;
 		hashOperations.putAll(redisKey, data);
+		System.out.println("data after storing in redis::::" + hashOperations);
 	}
 
+	public Map<String, String> getDataFromPartnerProcedure(String id) {
+		ResultSet rs = null;
+		Map<String, String> partnerMap = new HashMap<>();
+		try (Connection conn = DriverManager.getConnection(env.getProperty("spring.datasource.url"),
+				env.getProperty("spring.datasource.username"), env.getProperty("spring.datasource.password"))) {
+			if (conn != null) {
+				LOGGER.info("Connected to the database!");
+				PreparedStatement ps = conn.prepareCall("{call Usp_GetPartnerDetailsfromPartnerCodeAPI(?)}");
+				ps.setString(1, id);
+				rs = ps.executeQuery();
+				while (rs.next()) {
+
+					partnerMap.put(AppConstant.IP_PARTNER_CODE, rs.getString("IP_PARTNER_CODE"));
+					partnerMap.put(AppConstant.IP_EMAIL, rs.getString("IP_EMAIL"));
+					partnerMap.put(AppConstant.IP_MOBILE_NUMBER, rs.getString("IP_MOBILE_NUMBER"));
+					partnerMap.put(AppConstant.IP_NAME, rs.getString("IP_NAME"));
+
+				}
+
+			}
+		} catch (SQLException e) {
+			System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+		}
+		return partnerMap;
+	}
+
+	public Map<String, String> getDataFromRedisForPartner(String id) {
+		String redisKey = "macm.user.client." + id;
+		HashOperations hashOperations = redisTemplate.opsForHash();
+		Map<String, String> value = hashOperations.entries(redisKey);
+		Map<String, String> finalValue = new HashMap<>();
+		for (Map.Entry<String, String> entry : value.entrySet()) {
+
+			finalValue.put(AppConstant.IP_PARTNER_CODE, value.get("partnerCode"));
+			finalValue.put(AppConstant.IP_EMAIL, value.get("partnerEmail"));
+			finalValue.put(AppConstant.IP_MOBILE_NUMBER, value.get("partnerMobileNumber"));
+			finalValue.put(AppConstant.IP_NAME, value.get("partnerName"));
+
+		}
+		System.out.println("values are:::" + value);
+		return finalValue;
+	}
+
+	public void storeDataInRedisForPartner(String id, Map<String, String> partnerData) {
+		HashOperations<String, String, String> hashOperations = redisTemplate.opsForHash();
+		String redisKey = "macm.user.client." + id;
+		hashOperations.putAll(redisKey, partnerData);
+		System.out.println("data after storing in redis::::" + hashOperations);
+
+	}
 }
