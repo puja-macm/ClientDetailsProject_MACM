@@ -25,20 +25,22 @@ public class ClientRepository {
 
 	public Map<String, String> getDataFromRedis(String id) {
 		String redisKey = "macm.user.client." + id;
-		HashOperations hashOperations = redisTemplate.opsForHash();
-		Map<String, String> value = hashOperations.entries(redisKey);
+		Map<String, String> value;
 		Map<String, String> finalValue = new HashMap<>();
-		for (Map.Entry<String, String> entry : value.entrySet()) {
-			finalValue.put(AppConstant.CL_CODE, value.get("cl_code"));
-			finalValue.put(AppConstant.NAME, value.get("name"));
-			finalValue.put(AppConstant.EMAIL, value.get("email"));
-			finalValue.put(AppConstant.MOBILE_NO, value.get("mobile"));
-			finalValue.put(AppConstant.PAN_NO, value.get("pan_gir_no"));
-			finalValue.put(AppConstant.IP_PARTNER_CODE, value.get("sub_broker"));
-			
-
+		try {
+			HashOperations hashOperations = redisTemplate.opsForHash();
+			value = hashOperations.entries(redisKey);
+			for (Map.Entry<String, String> entry : value.entrySet()) {
+				finalValue.put(AppConstant.CL_CODE, value.get("cl_code"));
+				finalValue.put(AppConstant.NAME, value.get("name"));
+				finalValue.put(AppConstant.EMAIL, value.get("email"));
+				finalValue.put(AppConstant.MOBILE_NO, value.get("mobile"));
+				finalValue.put(AppConstant.PAN_NO, value.get("pan_gir_no"));
+				finalValue.put(AppConstant.IP_PARTNER_CODE, value.get("IP_PARTNER_CODE"));
+			}
+		} catch (Exception e) {
+			System.out.println("exception" + e);
 		}
-		System.out.println("values are:::" + value);
 		return finalValue;
 	}
 
@@ -60,8 +62,7 @@ public class ClientRepository {
 					clientMap.put("email", rs.getString("email"));
 					clientMap.put("mobile", rs.getString("mobile_pager"));
 					clientMap.put("pan_gir_no", rs.getString("pan_gir_no"));
-					clientMap.put("sub_broker", rs.getString("sub_broker"));
-				
+					clientMap.put("IP_PARTNER_CODE", rs.getString("IP_PARTNER_CODE"));
 
 				}
 
@@ -79,7 +80,6 @@ public class ClientRepository {
 		HashOperations<String, String, String> hashOperations = redisTemplate.opsForHash();
 		String redisKey = "macm.user.client." + id;
 		hashOperations.putAll(redisKey, data);
-		System.out.println("data after storing in redis::::" + hashOperations);
 	}
 
 	public Map<String, String> getDataFromPartnerProcedure(String id) {
@@ -129,7 +129,6 @@ public class ClientRepository {
 		HashOperations<String, String, String> hashOperations = redisTemplate.opsForHash();
 		String redisKey = "macm.user.client." + id;
 		hashOperations.putAll(redisKey, partnerData);
-		System.out.println("data after storing in redis::::" + hashOperations);
 
 	}
 }
